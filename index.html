@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Ping Pong Game</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #141E30, #243B55);
+      height: 100vh;
+      font-family: 'Arial', sans-serif;
+      color: #fff;
+      overflow: hidden;
+      text-align: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #gameCanvas {
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      border-radius: 12px;
+      box-shadow: 0px 20px 30px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    #scoreDisplay, #gameControls, #gameOver {
+      position: absolute;
+      font-size: 20px;
+      text-align: center;
+    }
+    #scoreDisplay {
+      top: 20px;
+      font-weight: bold;
+      color: #FFD700;
+      text-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      text-transform: uppercase;
+    }
+    #gameOver {
+      display: none;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 30px;
+      color: #FFD700;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      animation: fadeIn 1s ease;
+    }
+
+    .game-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #ffffff;
+      background-color: #00B4D8;
+      transition: all 0.3s;
+      box-shadow: 0px 10px 20px rgba(0, 180, 216, 0.4);
+      text-transform: uppercase;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .game-btn:hover {
+      background-color: #0077B6;
+      box-shadow: 0px 15px 30px rgba(0, 119, 182, 0.4);
+    }
+    #gameControls {
+      bottom: 15px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    #centerBtn {
+      display: inline-block;
+      padding: 14px 28px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="scoreDisplay">SCORE: 0</div>
+  <canvas id="gameCanvas" width="320" height="500"></canvas>
+  <div id="gameControls">
+    <button class="game-btn" id="leftBtn"><</button>
+    <button class="game-btn" id="centerBtn">START</button>
+    <button class="game-btn" id="rightBtn">></button>
+  </div>
+  <div id="gameOver">GAME OVER!</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const gameOverDisplay = document.getElementById('gameOver');
+    const centerBtn = document.getElementById('centerBtn');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+
+    let paddleWidth = 80;
+    let paddleHeight = 12;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+    let ballRadius = 10;
+    let ballX, ballY, dx, dy, score;
+    let gameActive = false;
+    let moveLeft = false;
+    let moveRight = false;
+
+    function initializeGame() {
+      score = 0;
+      ballX = canvas.width / 2;
+      ballY = canvas.height - paddleHeight - ballRadius - 15;
+      dx = 3;
+      dy = -3;
+      paddleX = (canvas.width - paddleWidth) / 2;
+    }
+
+    leftBtn.addEventListener('touchstart', () => moveLeft = true);
+    leftBtn.addEventListener('touchend', () => moveLeft = false);
+    rightBtn.addEventListener('touchstart', () => moveRight = true);
+    rightBtn.addEventListener('touchend', () => moveRight = false);
+
+    centerBtn.addEventListener('click', () => {
+      if (!gameActive) startGame();
+      else restartGame();
+    });
+
+    function drawPaddle() {
+      ctx.beginPath();
+      ctx.rect(paddleX, canvas.height - paddleHeight - 15, paddleWidth, paddleHeight);
+      ctx.fillStyle = '#00B4D8';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#00B4D8';
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFD700';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#FFD700';
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawScore() {
+      scoreDisplay.innerText = `SCORE: ${score}`;
+    }
+
+    function startGame() {
+      gameActive = true;
+      centerBtn.innerText = 'RESTART';
+      gameOverDisplay.style.display = 'none';
+      initializeGame();
+      draw();
+    }
+
+    function restartGame() {
+      initializeGame();
+      startGame();
+    }
+
+    function endGame() {
+      gameActive = false;
+      gameOverDisplay.style.display = 'block';
+      centerBtn.innerText = 'RESTART';
+    }
+
+    function draw() {
+      if (!gameActive) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBall();
+      drawPaddle();
+      drawScore();
+
+      if (ballX + dx > canvas.width - ballRadius || ballX + dx < ballRadius) dx = -dx;
+      if (ballY + dy < ballRadius) dy = -dy;
+
+      // Improved collision detection with the paddle
+      const paddleTop = canvas.height - paddleHeight - 15;
+      const paddleBottom = canvas.height - 15;
+      if (
+        ballY + dy > paddleTop - ballRadius &&
+        ballY + dy < paddleBottom &&
+        ballX > paddleX &&
+        ballX < paddleX + paddleWidth
+      ) {
+        dy = -Math.abs(dy); // Ensure ball bounces up
+        score += 1;
+      } else if (ballY + dy > canvas.height - ballRadius) {
+        endGame();
+        return;
+      }
+
+      ballX += dx;
+      ballY += dy;
+
+      if (moveLeft && paddleX > 0) paddleX -= 5;
+      if (moveRight && paddleX < canvas.width - paddleWidth) paddleX += 5;
+
+      requestAnimationFrame(draw);
+    }
+  </script>
+</body>
+</html>
